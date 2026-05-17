@@ -1,8 +1,4 @@
 """Push notification service via Firebase Cloud Messaging."""
-import firebase_admin
-from firebase_admin import credentials, messaging
-
-
 _initialized = False
 
 
@@ -10,6 +6,8 @@ def _init_firebase():
     global _initialized
     if _initialized:
         return
+    import firebase_admin
+    from firebase_admin import credentials
     cred = credentials.Certificate("firebase-credentials.json")
     firebase_admin.initialize_app(cred)
     _initialized = True
@@ -20,6 +18,7 @@ def send_track_push(fcm_token: str, title: str, body: str, article_id: int) -> s
     if not fcm_token:
         return None
     _init_firebase()
+    from firebase_admin import messaging
     message = messaging.Message(
         token=fcm_token,
         notification=messaging.Notification(title=f"📡 {title}"[:100], body=body[:200]),
@@ -37,6 +36,7 @@ def send_daily_digest_push(fcm_token: str, digest_title: str, digest_id: int) ->
     if not fcm_token:
         return None
     _init_firebase()
+    from firebase_admin import messaging
     message = messaging.Message(
         token=fcm_token,
         notification=messaging.Notification(

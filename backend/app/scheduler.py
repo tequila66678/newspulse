@@ -8,7 +8,6 @@ from app.config import settings
 from app.database import get_pool
 from app.services.aggregator import aggregate
 from app.services.matcher import process_new_articles
-from app.services.push import broadcast_daily_digest
 
 scheduler = AsyncIOScheduler()
 logger = logging.getLogger("newspulse")
@@ -76,6 +75,7 @@ async def _generate_daily_digest():
                 title,
             )
             digest_id = digest_row["id"]
+            from app.services.push import broadcast_daily_digest
             await broadcast_daily_digest(digest_id, title or "今日精选")
             logger.info(f"Daily digest {digest_id} broadcast")
     except Exception as e:
