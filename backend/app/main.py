@@ -12,9 +12,10 @@ from app.scheduler import start_scheduler, stop_scheduler
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()
-    start_scheduler()
+    # TODO: enable scheduler once deployment is stable
+    # start_scheduler()
     yield
-    stop_scheduler()
+    # stop_scheduler()
     await close_db()
 
 
@@ -38,3 +39,22 @@ app.include_router(web.router, tags=["web"])
 @app.get("/health")
 async def health():
     return {"status": "ok"}
+
+
+@app.post("/trigger-aggregate")
+async def trigger_aggregate():
+    from app.services.aggregator import aggregate
+    from app.services.matcher import process_new_articles
+    from app.database import get_pool
+
+    count = await aggregate()
+    if count > 0:
+        pool = await get_pool()
+        async with pool.acquire() as conn:
+            rows = await conn.fetch(
+                "SELECT id FROM articles ORDER BY fetched_at DESC LIMIT $1", count
+            )
+            ids = [r["id"] for r in rows]
+        if ids:
+            await process_new_articles(ids)
+    return {"new_articles": count}
