@@ -18,6 +18,7 @@ async def _fetch_and_match():
     """Fetch news and match against subscriptions."""
     try:
         count = await aggregate()
+        match_count = 0
         if count > 0:
             pool = await get_pool()
             async with pool.acquire() as conn:
@@ -27,6 +28,7 @@ async def _fetch_and_match():
                 ids = [r["id"] for r in rows]
             if ids:
                 matches = await process_new_articles(ids)
+                match_count = len(matches)
                 for m in matches:
                     if m.get("fcm_token"):
                         from app.services.push import send_track_push
@@ -36,7 +38,7 @@ async def _fetch_and_match():
                             "有新的相关新闻",
                             ids[0],
                         )
-            logger.info(f"Fetched {count} new articles, {len(matches) if 'matches' in dir() else 0} matches")
+            logger.info(f"Fetched {count} new articles, {match_count} matches")
     except Exception as e:
         logger.error(f"Fetch-and-match failed: {e}")
 
