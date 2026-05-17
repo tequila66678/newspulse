@@ -1,5 +1,11 @@
 [build]
   builder = "nixpacks"
+  buildCommand = "pip install -r requirements.txt"
+
+[variables]
+  DATABASE_URL = "postgresql://postgres:BKfan27875925@db.clsdfkxtcyjzzlmzgyep.supabase.co:5432/postgres"
+  JWT_SECRET = "newspulse-prod-change-me-later"
+  SUPPORTED_RSS_URLS = "[\"https://36kr.com/feed\",\"https://sspai.com/feed\",\"https://www.ruanyifeng.com/blog/atom.xml\",\"https://feed.infoq.com/\",\"https://www.ifanr.com/feed\"]"
 
 [deploy]
   workingDirectory = "backend"
