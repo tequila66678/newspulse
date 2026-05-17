@@ -15,11 +15,11 @@ class Settings(BaseSettings):
     digest_count: int = 15
     fetch_interval_minutes: int = 15
     supported_rss_urls: list[str] = [
-        "https://36kr.com/feed",
-        "https://sspai.com/feed",
-        "https://www.ruanyifeng.com/blog/atom.xml",
-        "https://feed.infoq.com/",
-        "https://www.ifanr.com/feed",
+        "https://rsshub.rssforever.com/bbc/world",
+        "https://www.sciencedaily.com/rss/top/science.xml",
+        "https://www.sciencedaily.com/rss/top/technology.xml",
+        "https://rsshub.rssforever.com/zaobao/realtime/china",
+        "https://rsshub.rssforever.com/thepaper/featured",
     ]
 
     class Config:

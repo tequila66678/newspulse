@@ -45,13 +45,15 @@ async def fetch_rss(url: str) -> list[dict]:
     feed = feedparser.parse(resp.text)
     articles = []
     for entry in feed.entries[:30]:
+        title = entry.get("title", "")
+        summary = entry.get("summary", entry.get("description", ""))
         articles.append({
-            "title": entry.get("title", ""),
-            "summary": entry.get("summary", entry.get("description", "")),
+            "title": title,
+            "summary": summary,
             "source": feed.feed.get("title", url),
             "source_url": entry.get("link", ""),
             "published_at": _parse_date(entry),
-            "score": 0.5,
+            "score": _estimate_score_rss(title, summary, feed.feed.get("title", url)),
         })
     return articles
 
@@ -59,14 +61,42 @@ async def fetch_rss(url: str) -> list[dict]:
 def _estimate_score(article: dict) -> float:
     """Heuristic score from source weight + keyword bonuses."""
     score = 0.3
-    high_impact_sources = ["Reuters", "新华社", "BBC", "CNN", "央视", "人民日报"]
+    high_impact_sources = ["BBC", "Reuters", "AP", "Al Jazeera", "新华社", "CNN", "央视", "人民日报", "联合早报"]
     source_name = article.get("source", {}).get("name", "") if isinstance(article.get("source"), dict) else ""
     for kw in high_impact_sources:
         if kw in str(source_name):
             score += 0.3
             break
     title = str(article.get("title", ""))
-    urgency_keywords = ["突发", "快讯", "紧急", "重磅", "breaking"]
+    summary = str(article.get("description", article.get("summary", "")))
+    text = f"{title} {summary}".lower()
+
+    # Military / conflict keywords
+    military_kw = ["war", "missile", "nuclear", "invasion", "sanctions", "strike", "military",
+                   "战争", "导弹", "核", "入侵", "制裁", "空袭", "军事", "冲突", "武器"]
+    for kw in military_kw:
+        if kw in text:
+            score += 0.3
+            break
+
+    # Political / geopolitical keywords
+    political_kw = ["president", "election", "coup", "treaty", "summit", "diplomatic",
+                    "总统", "选举", "政变", "条约", "峰会", "外交", "国会", "白宫", "克里姆林宫"]
+    for kw in political_kw:
+        if kw in text:
+            score += 0.25
+            break
+
+    # Breakthrough / discovery keywords
+    breakthrough_kw = ["breakthrough", "first-ever", "discovered", "revolutionary", "unprecedented",
+                       "突破", "首次", "发现", "重大发现", "革命性", "历史性"]
+    for kw in breakthrough_kw:
+        if kw in text:
+            score += 0.25
+            break
+
+    # Urgency keywords
+    urgency_keywords = ["突发", "快讯", "紧急", "重磅", "breaking", "just in", "alert"]
     for kw in urgency_keywords:
         if kw in title.lower():
             score += 0.2
@@ -85,6 +115,48 @@ def _parse_date(entry) -> str | None:
 
 def _url_hash(url: str) -> str:
     return hashlib.sha256(url.encode()).hexdigest()[:16]
+
+
+def _estimate_score_rss(title: str, summary: str, source: str) -> float:
+    """Score RSS article based on keyword relevance to world events."""
+    score = 0.3
+    # High-impact source bonus
+    high_impact = ["BBC", "联合早报", "Science Daily", "澎湃", "Reuters", "AP", "Al Jazeera"]
+    for kw in high_impact:
+        if kw.lower() in source.lower():
+            score += 0.3
+            break
+
+    text = f"{title} {summary}".lower()
+
+    # Military / conflict
+    for kw in ["war", "missile", "nuclear", "invasion", "sanctions", "strike", "military",
+               "战争", "导弹", "核", "入侵", "制裁", "空袭", "军事", "冲突"]:
+        if kw in text:
+            score += 0.3
+            break
+
+    # Political / geopolitical
+    for kw in ["president", "election", "coup", "treaty", "summit", "diplomatic",
+               "总统", "选举", "政变", "条约", "峰会", "外交", "白宫"]:
+        if kw in text:
+            score += 0.25
+            break
+
+    # Breakthrough / discovery
+    for kw in ["breakthrough", "first-ever", "discovered", "revolutionary",
+               "突破", "首次", "发现", "重大发现", "革命性"]:
+        if kw in text:
+            score += 0.25
+            break
+
+    # Urgency
+    for kw in ["突发", "快讯", "紧急", "重磅", "breaking", "alert"]:
+        if kw in text:
+            score += 0.2
+            break
+
+    return min(score, 1.0)
 
 
 def _clean_html(text: str) -> str:
