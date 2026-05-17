@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import init_db, close_db
-from app.routers import auth, subscriptions, articles, notifications
+from app.routers import auth, subscriptions, articles, notifications, web
 from app.scheduler import start_scheduler, stop_scheduler
 
 
@@ -32,6 +32,7 @@ app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(subscriptions.router, prefix="/subscriptions", tags=["subscriptions"])
 app.include_router(articles.router, prefix="/articles", tags=["articles"])
 app.include_router(notifications.router, prefix="/notifications", tags=["notifications"])
+app.include_router(web.router, tags=["web"])
 
 
 @app.get("/health")
