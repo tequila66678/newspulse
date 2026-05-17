@@ -3,7 +3,7 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    database_url: str = ""
+    database_url: str = "sqlite:///./newspulse_prod.db"
     supabase_db: str = ""
     fcm_credentials_path: str = "firebase-credentials.json"
     newsapi_key: str = ""
