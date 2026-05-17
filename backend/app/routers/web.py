@@ -1,7 +1,6 @@
 """Web page endpoints."""
 from fastapi import APIRouter, Request
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import RedirectResponse
 
 from app.database import get_pool
 
@@ -10,11 +9,6 @@ templates = Jinja2Templates(directory="app/templates")
 
 
 @router.get("/")
-async def root():
-    return RedirectResponse(url="/web")
-
-
-@router.get("/web")
 async def web_feed(request: Request):
     pool = await get_pool()
     async with pool.acquire() as conn:
