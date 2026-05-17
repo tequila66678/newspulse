@@ -14,7 +14,7 @@ async def web_feed(request: Request):
     async with pool.acquire() as conn:
         rows = await conn.fetch(
             """SELECT title, summary, source, source_url, score, published_at
-               FROM articles ORDER BY published_at DESC LIMIT 100"""
+               FROM articles ORDER BY score DESC LIMIT 100"""
         )
         total = await conn.fetchrow("SELECT COUNT(*) as c FROM articles")
 
