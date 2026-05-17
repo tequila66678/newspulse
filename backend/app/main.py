@@ -12,10 +12,9 @@ from app.scheduler import start_scheduler, stop_scheduler
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_db()
-    # TODO: enable scheduler once deployment is stable
-    # start_scheduler()
+    start_scheduler()
     yield
-    # stop_scheduler()
+    stop_scheduler()
     await close_db()
 
 
