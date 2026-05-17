@@ -3,7 +3,7 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    database_url: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/newspulse"
+    database_url: str = "postgresql://postgres:postgres@localhost:5432/newspulse"
     supabase_db: str = ""
     fcm_credentials_path: str = "firebase-credentials.json"
     newsapi_key: str = ""
