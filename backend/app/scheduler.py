@@ -89,6 +89,7 @@ def start_scheduler():
         minutes=settings.fetch_interval_minutes,
         id="fetch_and_match",
         replace_existing=True,
+        next_run_time=datetime.now(timezone.utc),  # run immediately on startup
     )
     scheduler.add_job(
         _generate_daily_digest,
