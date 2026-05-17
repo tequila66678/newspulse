@@ -1,1 +1,6 @@
-# Railway will auto-detect Python and use Procfile + requirements.txt
+[build]
+  builder = "nixpacks"
+  buildCommand = "pip install -r requirements.txt"
+
+[deploy]
+  startCommand = "cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT"
