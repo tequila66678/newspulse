@@ -2,9 +2,11 @@
 import os
 import tempfile
 
-# Use a temp file for SQLite test database (in-memory would lose tables
-# when init_db's connection closes before the test connection opens)
-_TEST_DB = os.path.join(tempfile.gettempdir(), "newspulse_test.db")
+# Unique temp file per test session — avoids stale data from previous runs
+_TEST_DB = os.path.join(
+    tempfile.gettempdir(),
+    f"newspulse_test_{os.urandom(4).hex()}.db"
+)
 os.environ["DATABASE_URL"] = f"sqlite:///{_TEST_DB}"
 
 import pytest
@@ -14,7 +16,6 @@ from app.main import app
 
 @pytest.fixture
 async def client():
-    # Explicitly init DB — lifespan may not fire with ASGITransport
     from app.database import init_db
     await init_db()
 
@@ -25,7 +26,6 @@ async def client():
 
 @pytest.fixture(scope="session", autouse=True)
 def cleanup_test_db():
-    """Remove the test database file after all tests complete."""
     yield
     from app.database import close_db
     import asyncio

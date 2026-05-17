@@ -1,8 +1,11 @@
 """Match engine: keyword exact match + embedding semantic similarity."""
 import asyncio
+import logging
 
 from app.config import settings
 from app.database import get_pool
+
+logger = logging.getLogger("newspulse")
 
 
 async def get_active_subscriptions() -> list[dict]:
@@ -21,21 +24,36 @@ def keyword_match(article_title: str, article_summary: str, keyword: str) -> boo
 
 
 _embedding_model = None
+_embedding_failed = False
 
 
 def _get_model():
-    global _embedding_model
+    """Load embedding model lazily. Returns None if unavailable."""
+    global _embedding_model, _embedding_failed
+    if _embedding_failed:
+        return None
     if _embedding_model is None:
-        from sentence_transformers import SentenceTransformer
-        _embedding_model = SentenceTransformer("shibing624/text2vec-base-chinese")
+        try:
+            import os
+            os.environ.setdefault("HF_HUB_DOWNLOAD_TIMEOUT", "5")
+            from sentence_transformers import SentenceTransformer
+            _embedding_model = SentenceTransformer("shibing624/text2vec-base-chinese")
+            logger.info("Embedding model loaded successfully")
+        except Exception as e:
+            _embedding_failed = True
+            logger.warning(f"Embedding model unavailable, using keyword matching only: {e}")
+            return None
     return _embedding_model
 
 
 def semantic_match(title: str, summary: str, keyword: str, threshold: float | None = None) -> bool:
-    """Compute cosine similarity between title+summary and keyword. Returns True if above threshold."""
+    """Compute cosine similarity between title+summary and keyword. Returns True if above threshold.
+    Returns False if embedding model is unavailable."""
     if threshold is None:
         threshold = settings.embedding_threshold
     model = _get_model()
+    if model is None:
+        return False
     article_text = f"{title} {summary}"[:512]
     embeddings = model.encode([article_text, keyword])
     similarity = float(embeddings[0] @ embeddings[1].T)

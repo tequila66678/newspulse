@@ -1,5 +1,6 @@
 """News aggregation: fetch from NewsAPI + RSS sources, dedup, score, and store."""
 import hashlib
+import logging
 import re
 
 import feedparser
@@ -7,6 +8,8 @@ import httpx
 
 from app.config import settings
 from app.database import get_pool
+
+logger = logging.getLogger("newspulse")
 
 
 async def fetch_newsapi() -> list[dict]:
@@ -36,7 +39,7 @@ async def fetch_newsapi() -> list[dict]:
 async def fetch_rss(url: str) -> list[dict]:
     """Fetch articles from an RSS feed."""
     async with httpx.AsyncClient() as client:
-        resp = await client.get(url, timeout=15)
+        resp = await client.get(url, timeout=30)
         if resp.status_code != 200:
             return []
     feed = feedparser.parse(resp.text)
@@ -92,12 +95,19 @@ async def aggregate():
     """Pull from all sources, deduplicate, store new articles. Returns count of new articles."""
     raw = []
 
-    newsapi_articles = await fetch_newsapi()
-    raw.extend(newsapi_articles)
+    try:
+        newsapi_articles = await fetch_newsapi()
+        raw.extend(newsapi_articles)
+    except Exception as e:
+        logger.warning(f"NewsAPI fetch failed: {e}")
 
     for rss_url in settings.supported_rss_urls:
-        rss_articles = await fetch_rss(rss_url)
-        raw.extend(rss_articles)
+        try:
+            rss_articles = await fetch_rss(rss_url)
+            raw.extend(rss_articles)
+            logger.info(f"RSS {rss_url}: {len(rss_articles)} articles")
+        except Exception as e:
+            logger.warning(f"RSS {rss_url} failed: {e}")
 
     pool = await get_pool()
     new_count = 0
