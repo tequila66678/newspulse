@@ -1,6 +1,6 @@
 """Scheduler for periodic tasks using APScheduler."""
 import logging
-from datetime import date
+from datetime import date, datetime, timedelta, timezone
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
@@ -55,10 +55,12 @@ async def _generate_daily_digest():
             if existing:
                 return
 
+            cutoff = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
             rows = await conn.fetch(
                 """SELECT id, title FROM articles
-                   WHERE published_at >= NOW() - INTERVAL '24 hours'
-                   ORDER BY score DESC LIMIT $1""",
+                   WHERE published_at >= $1
+                   ORDER BY score DESC LIMIT $2""",
+                cutoff,
                 settings.digest_count,
             )
             if not rows:
